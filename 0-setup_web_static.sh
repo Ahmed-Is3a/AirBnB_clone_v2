@@ -1,32 +1,27 @@
 #!/usr/bin/env bash
-# Install Nginx if it's not already installed
-if ! command -v nginx &> /dev/null; then
-    sudo apt update
-    sudo apt install nginx -y
-fi
+# script that sets up web servers for the deployment of web_static
+sudo apt-get update
+sudo apt-get -y install nginx
+sudo ufw allow 'Nginx HTTP'
 
-# Create necessary directories if they don't exist
-sudo mkdir -p /data/web_static/releases/test /data/web_static/shared /data/web_static/current
+sudo mkdir -p /data/
+sudo mkdir -p /data/web_static/
+sudo mkdir -p /data/web_static/releases/
+sudo mkdir -p /data/web_static/shared/
+sudo mkdir -p /data/web_static/releases/test/
+sudo touch /data/web_static/releases/test/index.html
+sudo echo "<html>
+  <head>
+  </head>
+  <body>
+    Holberton School
+  </body>
+</html>" | sudo tee /data/web_static/releases/test/index.html
 
-# Create a fake HTML file for testing
-echo "<html><body>Test Page</body></html>" | sudo tee /data/web_static/releases/test/index.html > /dev/null
+sudo ln -s -f /data/web_static/releases/test/ /data/web_static/current
 
-# Create or update the symbolic link
-sudo ln -sf /data/web_static/releases/test/ /data/web_static/current
-
-# Give ownership of the /data/ folder to the ubuntu user and group
 sudo chown -R ubuntu:ubuntu /data/
 
-# Update Nginx configuration to serve the content of /data/web_static/current/
-# Use alias inside the Nginx configuration
-nginx_config="/etc/nginx/sites-available/default"
-nginx_config_backup="/etc/nginx/sites-available/default.backup"
+sudo sed -i '/listen 80 default_server/a location /hbnb_static { alias /data/web_static/current/;}' /etc/nginx/sites-enabled/default
 
-# Backup the original configuration file
-sudo cp $nginx_config $nginx_config_backup
-
-# Update the configuration file
-sudo sed -i 's#^\s*location / {#location / {\n\t\talias /data/web_static/current/;\n\t\t# Serve static content directly\n\t\tlocation /hbnb_static/ {\n\t\t\talias /data/web_static/current/;\n\t\t}\n#' $nginx_config
-
-# Restart Nginx
-sudo systemctl restart nginx
+sudo service nginx restart
