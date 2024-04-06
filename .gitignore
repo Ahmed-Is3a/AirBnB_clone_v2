@@ -1,0 +1,4 @@
+# ignore VS Code autocreated files
+__pycache__
+
+file.json
